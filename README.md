@@ -51,7 +51,7 @@
 └── README.md         # প্রজেক্টের বিবরণ (এই ফাইলটি)
 
 ## 👨‍💻 ডেভেলপার (Developer)
-Developed by Suman 📞 Contact: 01750497710
+Developed by Suman [✆ WhatsApp](https://wa.me/8801750497710)
 
 ## 📄 লাইসেন্স (License)
 This project is open-source and available under the MIT License. Feel free to copy, modify, and use it for your personal needs.
