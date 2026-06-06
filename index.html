@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>বাজারের হিসাব</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
+        .input-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .input-group input { flex: 1 1 calc(50% - 10px); padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        .input-group input:focus { border-color: #3498db; outline: none; }
+        button { width: 100%; padding: 12px; background: #3498db; color: #fff; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #2980b9; }
+        .table-responsive { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .delete-btn { background: #e74c3c; padding: 5px 10px; font-size: 12px; width: auto; }
+        .delete-btn:hover { background: #c0392b; }
+        .total-section { margin-top: 20px; padding: 15px; background: #e8f6f3; border-radius: 5px; font-weight: bold; text-align: right; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🛒 বাজারের হিসাব</h2>
+    
+    <div class="input-group">
+        <input type="text" id="product" placeholder="পণ্যের নাম (যেমন: আলু)" required>
+        <input type="number" id="amount" placeholder="পরিমাণ (Amount)" min="0" step="any" required>
+        <input type="number" id="rate" placeholder="দর (Rate)" min="0" step="any" required>
+        <input type="number" id="discount" placeholder="ছাড়/Discount (৳) - ঐচ্ছিক" min="0" step="any">
+    </div>
+    <button onclick="addItem()">আইটেম যোগ করুন</button>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Product</th>
+                    <th>Amount</th>
+                    <th>Rate</th>
+                    <th>Cost</th>
+                    <th>Final Cost</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="itemList">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="total-section">
+        সর্বমোট খরচ: ৳<span id="grandTotal">0.00</span>
+    </div>
+</div>
+
+<script>
+    let items = [];
+
+    function addItem() {
+        const product = document.getElementById('product').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+        const rate = parseFloat(document.getElementById('rate').value);
+        let discount = parseFloat(document.getElementById('discount').value);
+
+        if (!product || isNaN(amount) || isNaN(rate)) {
+            alert("অনুগ্রহ করে পণ্যের নাম, পরিমাণ এবং দর সঠিকভাবে দিন।");
+            return;
+        }
+
+        if (isNaN(discount)) discount = 0;
+
+        const cost = amount * rate;
+        const discountedCost = cost - discount;
+
+        items.push({ product, amount, rate, cost, discountedCost });
+        
+        // Clear inputs
+        document.getElementById('product').value = '';
+        document.getElementById('amount').value = '';
+        document.getElementById('rate').value = '';
+        document.getElementById('discount').value = '';
+        document.getElementById('product').focus();
+
+        renderTable();
+    }
+
+    function removeItem(index) {
+        items.splice(index, 1);
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('itemList');
+        tbody.innerHTML = '';
+        let grandTotal = 0;
+
+        items.forEach((item, index) => {
+            grandTotal += item.discountedCost;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.product}</td>
+                <td>${item.amount}</td>
+                <td>৳${item.rate.toFixed(2)}</td>
+                <td>৳${item.cost.toFixed(2)}</td>
+                <td><strong>৳${item.discountedCost.toFixed(2)}</strong></td>
+                <td><button class="delete-btn" onclick="removeItem(${index})">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('grandTotal').innerText = grandTotal.toFixed(2);
+    }
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("Service Worker Registered"))
+        .catch(err => console.error("Service Worker Error", err));
+    }
+</script>
+
+</body>
+</html>
