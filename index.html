@@ -3,127 +3,286 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>বাজারের হিসাব</title>
-    <link rel="manifest" href="manifest.json">
+    <title>স্মার্ট বাজারের হিসাব</title>
+    <!-- ছবি শেয়ার করার জন্য লাইব্রেরি -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f4f7f6; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h2 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
-        .input-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-        .input-group input { flex: 1 1 calc(50% - 10px); padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-        .input-group input:focus { border-color: #3498db; outline: none; }
-        button { width: 100%; padding: 12px; background: #3498db; color: #fff; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #2980b9; }
-        .table-responsive { overflow-x: auto; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f2f2f2; font-weight: bold; }
-        .delete-btn { background: #e74c3c; padding: 5px 10px; font-size: 12px; width: auto; }
-        .delete-btn:hover { background: #c0392b; }
-        .total-section { margin-top: 20px; padding: 15px; background: #e8f6f3; border-radius: 5px; font-weight: bold; text-align: right; font-size: 18px; }
+        body { background-color: #f0f2f5; padding: 15px; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h2 { text-align: center; margin-bottom: 20px; color: #1a73e8; }
+        
+        /* Input Form Styles */
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        .row { display: flex; gap: 10px; }
+        .row .input-group { flex: 1; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 16px; background: #f8f9fa; }
+        input:focus, select:focus { border-color: #1a73e8; outline: none; background: #fff; }
+        
+        button.add-btn { width: 100%; padding: 14px; background: #1a73e8; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.2s; }
+        button.add-btn:active { background: #1557b0; }
+
+        /* Receipt / List Area */
+        #receipt-area { margin-top: 25px; padding: 10px; background: #fff; border-radius: 8px; }
+        .list-header { font-size: 18px; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        /* Card Styles for Mobile */
+        .item-card { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: 0.3s; }
+        .item-card.bought { background: #e6f4ea; border-color: #ceead6; opacity: 0.8; }
+        .item-card.bought .item-name { text-decoration: line-through; color: #137333; }
+        
+        .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .checkbox-container { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .checkbox-container input { width: 20px; height: 20px; accent-color: #1a73e8; }
+        
+        .card-actions button { background: none; border: none; font-size: 18px; cursor: pointer; padding: 5px; }
+        .card-actions .edit-btn { color: #f39c12; }
+        .card-actions .del-btn { color: #e74c3c; }
+        
+        .card-details { display: flex; justify-content: space-between; font-size: 14px; color: #666; }
+        .cost-highlight { font-weight: bold; color: #d35400; font-size: 16px; }
+
+        /* Totals Area */
+        .summary-box { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #ccc; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+        .summary-total { font-size: 18px; font-weight: bold; color: #1a73e8; border-top: 1px solid #ddd; padding-top: 8px; margin-top: 8px; }
+
+        /* Share Button */
+        button.share-btn { width: 100%; padding: 12px; background: #25d366; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🛒 বাজারের হিসাব</h2>
+    <h2>🛒 স্মার্ট বাজারের হিসাব</h2>
     
-    <div class="input-group">
-        <input type="text" id="product" placeholder="পণ্যের নাম (যেমন: আলু)" required>
-        <input type="number" id="amount" placeholder="পরিমাণ (Amount)" min="0" step="any" required>
-        <input type="number" id="rate" placeholder="দর (Rate)" min="0" step="any" required>
-        <input type="number" id="discount" placeholder="ছাড়/Discount (৳) - ঐচ্ছিক" min="0" step="any">
-    </div>
-    <button onclick="addItem()">আইটেম যোগ করুন</button>
+    <!-- Item Entry Form -->
+    <form id="itemForm" onsubmit="addItem(event)">
+        <div class="input-group">
+            <label>পণ্যের নাম</label>
+            <input type="text" id="product" list="product-suggestions" placeholder="যেমন: আলু, পেঁয়াজ" required>
+            <!-- Dropdown Suggestions -->
+            <datalist id="product-suggestions">
+                <option value="আলু"><option value="পেঁয়াজ"><option value="রসুন"><option value="আদা">
+                <option value="কাঁচা মরিচ"><option value="চাল"><option value="ডাল"><option value="সয়াবিন তেল">
+                <option value="ডিম"><option value="লবণ"><option value="চিনি"><option value="আটা">
+                <option value="গরুর মাংস"><option value="মুরগি"><option value="মাছ"><option value="সাবান">
+            </datalist>
+        </div>
 
-    <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th>No.</th>
-                    <th>Product</th>
-                    <th>Amount</th>
-                    <th>Rate</th>
-                    <th>Cost</th>
-                    <th>Final Cost</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="itemList">
-                </tbody>
-        </table>
+        <div class="row">
+            <div class="input-group">
+                <label>পরিমাণ</label>
+                <input type="number" id="amount" placeholder="উদা: ২" min="0" step="any" required>
+            </div>
+            <div class="input-group">
+                <label>একক</label>
+                <select id="unit">
+                    <option value="কেজি">কেজি</option>
+                    <option value="গ্রাম">গ্রাম</option>
+                    <option value="লিটার">লিটার</option>
+                    <option value="পিস">পিস</option>
+                    <option value="হালি">হালি</option>
+                    <option value="ডজন">ডজন</option>
+                    <option value="আঁটি">আঁটি</option>
+                    <option value="প্যাকেট">প্যাকেট</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-group">
+                <label>দর (টাকা/একক)</label>
+                <input type="number" id="rate" placeholder="উদা: ৫০ (ঐচ্ছিক)" min="0" step="any">
+            </div>
+            <div class="input-group">
+                <label>ছাড় (টাকা)</label>
+                <input type="number" id="discount" placeholder="উদা: ১০ (ঐচ্ছিক)" min="0" step="any">
+            </div>
+        </div>
+        
+        <input type="hidden" id="editIndex" value="-1">
+        <button type="submit" class="add-btn" id="addBtn">লিস্টে যোগ করুন</button>
+    </form>
+
+    <!-- Receipt / List Display Area -->
+    <div id="receipt-area">
+        <div class="list-header">আপনার শপিং লিস্ট</div>
+        <div id="itemList">
+            <!-- Cards will be generated here by JavaScript -->
+        </div>
+
+        <div class="summary-box">
+            <div class="summary-row">
+                <span>অনুমানিত মোট খরচ:</span>
+                <span id="estTotal">৳0.00</span>
+            </div>
+            <div class="summary-row">
+                <span>কেনা হয়েছে (টিক দেওয়া):</span>
+                <span id="boughtTotal" style="color:#137333; font-weight:bold;">৳0.00</span>
+            </div>
+            <div class="summary-row summary-total">
+                <span>সর্বমোট (ছাড় বাদে):</span>
+                <span id="grandTotal">৳0.00</span>
+            </div>
+        </div>
     </div>
 
-    <div class="total-section">
-        সর্বমোট খরচ: ৳<span id="grandTotal">0.00</span>
-    </div>
+    <!-- Share Button -->
+    <button class="share-btn" onclick="shareAsImage()">
+        📸 হোয়াটসঅ্যাপ/টেলিগ্রামে শেয়ার করুন
+    </button>
 </div>
 
 <script>
     let items = [];
 
-    function addItem() {
+    function addItem(event) {
+        event.preventDefault(); // Prevent form from refreshing page
+
         const product = document.getElementById('product').value;
         const amount = parseFloat(document.getElementById('amount').value);
-        const rate = parseFloat(document.getElementById('rate').value);
-        let discount = parseFloat(document.getElementById('discount').value);
-
-        if (!product || isNaN(amount) || isNaN(rate)) {
-            alert("অনুগ্রহ করে পণ্যের নাম, পরিমাণ এবং দর সঠিকভাবে দিন।");
-            return;
-        }
-
-        if (isNaN(discount)) discount = 0;
+        const unit = document.getElementById('unit').value;
+        let rate = parseFloat(document.getElementById('rate').value) || 0; // Default 0 if empty
+        let discount = parseFloat(document.getElementById('discount').value) || 0;
+        const editIndex = parseInt(document.getElementById('editIndex').value);
 
         const cost = amount * rate;
         const discountedCost = cost - discount;
 
-        items.push({ product, amount, rate, cost, discountedCost });
+        const newItem = { product, amount, unit, rate, discount, cost, discountedCost, bought: false };
+
+        if (editIndex > -1) {
+            // Keep the previous 'bought' status if editing
+            newItem.bought = items[editIndex].bought;
+            items[editIndex] = newItem;
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('addBtn').innerText = "লিস্টে যোগ করুন";
+        } else {
+            items.push(newItem);
+        }
         
-        // Clear inputs
-        document.getElementById('product').value = '';
-        document.getElementById('amount').value = '';
-        document.getElementById('rate').value = '';
-        document.getElementById('discount').value = '';
+        // Reset inputs
+        document.getElementById('itemForm').reset();
+        document.getElementById('unit').value = "কেজি"; // reset unit to default
         document.getElementById('product').focus();
 
-        renderTable();
+        renderList();
+    }
+
+    function toggleBought(index) {
+        items[index].bought = !items[index].bought;
+        renderList();
+    }
+
+    function editItem(index) {
+        const item = items[index];
+        document.getElementById('product').value = item.product;
+        document.getElementById('amount').value = item.amount;
+        document.getElementById('unit').value = item.unit;
+        document.getElementById('rate').value = item.rate > 0 ? item.rate : '';
+        document.getElementById('discount').value = item.discount > 0 ? item.discount : '';
+        
+        document.getElementById('editIndex').value = index;
+        document.getElementById('addBtn').innerText = "আপডেট করুন";
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
     }
 
     function removeItem(index) {
-        items.splice(index, 1);
-        renderTable();
+        if(confirm('আইটেমটি ডিলিট করতে চান?')){
+            items.splice(index, 1);
+            renderList();
+        }
     }
 
-    function renderTable() {
-        const tbody = document.getElementById('itemList');
-        tbody.innerHTML = '';
-        let grandTotal = 0;
+    function renderList() {
+        const listDiv = document.getElementById('itemList');
+        listDiv.innerHTML = '';
+        
+        let estTotal = 0;
+        let boughtTotal = 0;
 
         items.forEach((item, index) => {
-            grandTotal += item.discountedCost;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.product}</td>
-                <td>${item.amount}</td>
-                <td>৳${item.rate.toFixed(2)}</td>
-                <td>৳${item.cost.toFixed(2)}</td>
-                <td><strong>৳${item.discountedCost.toFixed(2)}</strong></td>
-                <td><button class="delete-btn" onclick="removeItem(${index})">X</button></td>
+            estTotal += item.discountedCost;
+            if(item.bought) boughtTotal += item.discountedCost;
+
+            const card = document.createElement('div');
+            card.className = `item-card ${item.bought ? 'bought' : ''}`;
+            
+            // Format price display
+            let rateText = item.rate > 0 ? `৳${item.rate}/${item.unit}` : 'দাম অজানা';
+            let totalText = item.discountedCost > 0 ? `৳${item.discountedCost.toFixed(2)}` : '৳০.০০';
+
+            card.innerHTML = `
+                <div class="card-top">
+                    <label class="checkbox-container">
+                        <input type="checkbox" onchange="toggleBought(${index})" ${item.bought ? 'checked' : ''}>
+                        <span class="item-name">${item.product} (${item.amount} ${item.unit})</span>
+                    </label>
+                    <div class="card-actions">
+                        <button class="edit-btn" onclick="editItem(${index})">✏️</button>
+                        <button class="del-btn" onclick="removeItem(${index})">🗑️</button>
+                    </div>
+                </div>
+                <div class="card-details">
+                    <span>দর: ${rateText} ${item.discount > 0 ? ` | ছাড়: ৳${item.discount}` : ''}</span>
+                    <span class="cost-highlight">মোট: ${totalText}</span>
+                </div>
             `;
-            tbody.appendChild(tr);
+            listDiv.appendChild(card);
         });
 
-        document.getElementById('grandTotal').innerText = grandTotal.toFixed(2);
+        // Update Totals
+        document.getElementById('estTotal').innerText = `৳${estTotal.toFixed(2)}`;
+        document.getElementById('boughtTotal').innerText = `৳${boughtTotal.toFixed(2)}`;
+        document.getElementById('grandTotal').innerText = `৳${estTotal.toFixed(2)}`;
     }
 
-    // Register Service Worker for PWA
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-        .then(() => console.log("Service Worker Registered"))
-        .catch(err => console.error("Service Worker Error", err));
+    // Share List as Image via WhatsApp/Telegram
+    async function shareAsImage() {
+        if(items.length === 0) {
+            alert("লিস্টে কোনো আইটেম নেই!");
+            return;
+        }
+
+        const receiptArea = document.getElementById('receipt-area');
+        
+        // Hide action buttons (edit/delete) before taking screenshot
+        const actionButtons = document.querySelectorAll('.card-actions');
+        actionButtons.forEach(btn => btn.style.display = 'none');
+
+        try {
+            const canvas = await html2canvas(receiptArea, { scale: 2, backgroundColor: "#ffffff" });
+            
+            // Show action buttons again
+            actionButtons.forEach(btn => btn.style.display = 'block');
+
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], 'shopping-list.png', { type: 'image/png' });
+                
+                // Check if device supports sharing files (Mobile devices usually do)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'বাজারের লিস্ট',
+                        text: 'আমার বাজারের হিসাব নিচে দেওয়া হলো:',
+                        files: [file]
+                    });
+                } else {
+                    // Fallback for PC or unsupported browsers: Download the image
+                    alert("আপনার ব্রাউজারে সরাসরি শেয়ার সাপোর্ট করে না, ছবিটি ডাউনলোড করা হচ্ছে। আপনি নিজে এটি হোয়াটসঅ্যাপে পাঠাতে পারবেন।");
+                    const link = document.createElement('a');
+                    link.download = 'shopping-list.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }
+            });
+        } catch (error) {
+            console.error("Image generation failed", error);
+            alert("ছবি তৈরি করতে কোনো সমস্যা হয়েছে।");
+            // Show action buttons again in case of error
+            actionButtons.forEach(btn => btn.style.display = 'block');
+        }
     }
 </script>
 
