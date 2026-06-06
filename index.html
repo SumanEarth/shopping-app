@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>স্মার্ট বাজারের হিসাব</title>
-    <!-- ছবি শেয়ার করার জন্য লাইব্রেরি -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -12,7 +11,6 @@
         .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         h2 { text-align: center; margin-bottom: 20px; color: #1a73e8; }
         
-        /* Input Form Styles */
         .input-group { margin-bottom: 12px; }
         .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
         .row { display: flex; gap: 10px; }
@@ -23,14 +21,14 @@
         button.add-btn { width: 100%; padding: 14px; background: #1a73e8; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.2s; }
         button.add-btn:active { background: #1557b0; }
 
-        /* Receipt / List Area */
         #receipt-area { margin-top: 25px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #eee; }
         .list-header { font-size: 18px; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
         
-        .date-picker { font-size: 14px; font-weight: normal; color: #555; display: flex; align-items: center; gap: 5px; }
-        .date-picker input { padding: 4px 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 5px; width: auto; }
+        /* Custom Date Picker Styles */
+        .date-picker-wrapper { position: relative; font-size: 14px; color: #555; display: inline-block; }
+        .date-display { font-weight: bold; color: #1a73e8; cursor: pointer; border-bottom: 1px dashed #1a73e8; padding-bottom: 2px; }
+        .date-picker-wrapper input[type="date"] { position: absolute; opacity: 0; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer; }
 
-        /* Card Styles */
         .item-card { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: 0.3s; }
         .item-card.bought { background: #e6f4ea; border-color: #ceead6; opacity: 0.8; }
         .item-card.bought .item-name { text-decoration: line-through; color: #137333; }
@@ -48,15 +46,12 @@
         .cost-highlight { font-weight: bold; color: #d35400; font-size: 15px; }
         .remarks-text { font-size: 13px; color: #607d8b; font-style: italic; background: #f1f8e9; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 5px; }
 
-        /* Totals Area */
         .summary-box { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #ccc; }
         .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
         .summary-total { font-size: 18px; font-weight: bold; color: #1a73e8; border-top: 1px solid #ddd; padding-top: 8px; margin-top: 8px; }
 
-        /* Footer */
         .dev-footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; font-weight: bold; }
 
-        /* Share Button */
         button.share-btn { width: 100%; padding: 12px; background: #25d366; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     </style>
 </head>
@@ -65,7 +60,6 @@
 <div class="container">
     <h2>🛒 স্মার্ট বাজারের হিসাব</h2>
     
-    <!-- Item Entry Form -->
     <form id="itemForm" onsubmit="addItem(event)">
         <div class="input-group">
             <label>পণ্যের নাম</label>
@@ -118,12 +112,13 @@
         <button type="submit" class="add-btn" id="addBtn">লিস্টে যোগ করুন</button>
     </form>
 
-    <!-- Receipt / List Display Area (This part gets screenshotted) -->
     <div id="receipt-area">
         <div class="list-header">
             <span>আপনার শপিং লিস্ট</span>
-            <div class="date-picker">
-                তারিখ: <input type="date" id="shoppingDate" onchange="saveDate()">
+            <!-- Custom Date display logic -->
+            <div class="date-picker-wrapper">
+                তারিখ: <span id="displayDate" class="date-display"></span>
+                <input type="date" id="shoppingDate" onchange="updateDateDisplay()">
             </div>
         </div>
         <div id="itemList">
@@ -145,13 +140,11 @@
             </div>
         </div>
 
-        <!-- Footer inside receipt area so it shows in shared image -->
         <div class="dev-footer">
             Developed by Suman: 01750497710
         </div>
     </div>
 
-    <!-- Share Button -->
     <button class="share-btn" onclick="shareAsImage()">
         📸 হোয়াটসঅ্যাপ/টেলিগ্রামে শেয়ার করুন
     </button>
@@ -159,8 +152,8 @@
 
 <script>
     let items = [];
+    const daysBangla = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
 
-    // Load data from Local Storage when page opens
     window.onload = function() {
         const storedItems = localStorage.getItem('smartShoppingList');
         if (storedItems) {
@@ -171,20 +164,36 @@
         if (storedDate) {
             document.getElementById('shoppingDate').value = storedDate;
         } else {
-            document.getElementById('shoppingDate').valueAsDate = new Date(); // Default today's date
+            // Set today's date safely adjusting to local timezone
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            document.getElementById('shoppingDate').value = `${yyyy}-${mm}-${dd}`;
         }
-
+        
+        updateDateDisplay(); // Show formatted date
         renderList();
     };
 
-    // Save Data to Local Storage
-    function saveData() {
-        localStorage.setItem('smartShoppingList', JSON.stringify(items));
+    function updateDateDisplay() {
+        const dateInput = document.getElementById('shoppingDate').value;
+        if (!dateInput) return;
+        
+        localStorage.setItem('shoppingDate', dateInput);
+        
+        // Convert to DD-MM-YYYY format and add Bangla Day
+        const dateObj = new Date(dateInput);
+        const dayName = daysBangla[dateObj.getDay()];
+        
+        const parts = dateInput.split('-'); // breaks YYYY-MM-DD
+        const formattedDate = `${dayName}, ${parts[2]}-${parts[1]}-${parts[0]}`; // formats as Day, DD-MM-YYYY
+        
+        document.getElementById('displayDate').innerText = formattedDate;
     }
 
-    // Save Date to Local Storage
-    function saveDate() {
-        localStorage.setItem('shoppingDate', document.getElementById('shoppingDate').value);
+    function saveData() {
+        localStorage.setItem('smartShoppingList', JSON.stringify(items));
     }
 
     function addItem(event) {
@@ -204,7 +213,7 @@
         const newItem = { product, amount, unit, rate, discount, remarks, cost, discountedCost, bought: false };
 
         if (editIndex > -1) {
-            newItem.bought = items[editIndex].bought; // Keep checkbox status
+            newItem.bought = items[editIndex].bought; 
             items[editIndex] = newItem;
             document.getElementById('editIndex').value = "-1";
             document.getElementById('addBtn').innerText = "লিস্টে যোগ করুন";
@@ -212,9 +221,8 @@
             items.push(newItem);
         }
         
-        saveData(); // Save to database (Local Storage)
+        saveData(); 
 
-        // Reset inputs
         document.getElementById('itemForm').reset();
         document.getElementById('unit').value = "কেজি"; 
         document.getElementById('product').focus();
@@ -224,7 +232,7 @@
 
     function toggleBought(index) {
         items[index].bought = !items[index].bought;
-        saveData(); // Save state
+        saveData(); 
         renderList();
     }
 
@@ -245,7 +253,7 @@
     function removeItem(index) {
         if(confirm('আইটেমটি ডিলিট করতে চান?')){
             items.splice(index, 1);
-            saveData(); // Save after delete
+            saveData(); 
             renderList();
         }
     }
@@ -267,7 +275,6 @@
             let rateText = item.rate > 0 ? `৳${item.rate}/${item.unit}` : 'দাম অজানা';
             let totalText = item.discountedCost > 0 ? `৳${item.discountedCost.toFixed(2)}` : '৳০.০০';
             
-            // Note/Remarks HTML
             let remarksHtml = item.remarks ? `<div class="remarks-text">📝 ${item.remarks}</div>` : '';
 
             card.innerHTML = `
@@ -295,7 +302,6 @@
         document.getElementById('grandTotal').innerText = `৳${estTotal.toFixed(2)}`;
     }
 
-    // Share List as Image
     async function shareAsImage() {
         if(items.length === 0) {
             alert("লিস্টে কোনো আইটেম নেই!");
@@ -305,12 +311,11 @@
         const receiptArea = document.getElementById('receipt-area');
         const actionButtons = document.querySelectorAll('.card-actions');
         
-        // Hide edit/delete buttons for the clean screenshot
         actionButtons.forEach(btn => btn.style.display = 'none');
 
         try {
             const canvas = await html2canvas(receiptArea, { scale: 2, backgroundColor: "#ffffff" });
-            actionButtons.forEach(btn => btn.style.display = 'flex'); // Show buttons again
+            actionButtons.forEach(btn => btn.style.display = 'flex'); 
 
             canvas.toBlob(async (blob) => {
                 const file = new File([blob], 'shopping-list.png', { type: 'image/png' });
