@@ -9,8 +9,18 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f0f2f5; padding: 15px; color: #333; }
         .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        h2 { text-align: center; margin-bottom: 20px; color: #1a73e8; }
+        h2 { text-align: center; margin-bottom: 15px; color: #1a73e8; }
         
+        /* List Manager Styles */
+        .list-manager-box { background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #d2e3fc; }
+        .list-manager-box label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #1a73e8; }
+        .list-controls { display: flex; gap: 8px; }
+        .list-controls select { flex: 1; padding: 8px; font-size: 15px; background: #fff; border: 1px solid #1a73e8; border-radius: 6px; font-weight: bold; color: #1a73e8; }
+        .btn-small { padding: 8px 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; color: #fff; }
+        .btn-new { background: #2ecc71; }
+        .btn-del-list { background: #e74c3c; }
+
+        /* Input Form Styles */
         .input-group { margin-bottom: 12px; }
         .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #555; }
         .row { display: flex; gap: 10px; }
@@ -23,9 +33,10 @@
 
         #receipt-area { margin-top: 25px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #eee; }
         .list-header { font-size: 18px; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .list-title-display { color: #2c3e50; font-size: 16px; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
         /* Custom Date Picker Styles */
-        .date-picker-wrapper { position: relative; font-size: 14px; color: #555; display: inline-block; }
+        .date-picker-wrapper { position: relative; font-size: 13px; color: #555; display: inline-block; text-align: right; }
         .date-display { font-weight: bold; color: #1a73e8; cursor: pointer; border-bottom: 1px dashed #1a73e8; padding-bottom: 2px; }
         .date-picker-wrapper input[type="date"] { position: absolute; opacity: 0; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer; }
 
@@ -59,6 +70,15 @@
 
 <div class="container">
     <h2>🛒 স্মার্ট বাজারের হিসাব</h2>
+    
+    <div class="list-manager-box">
+        <label>চলতি শপিং লিস্ট সিলেক্ট করুন</label>
+        <div class="list-controls">
+            <select id="listSelector" onchange="switchList(this.value)"></select>
+            <button class="btn-small btn-new" onclick="createNewList()" title="নতুন লিস্ট">➕ নতুন</button>
+            <button class="btn-small btn-del-list" onclick="deleteCurrentList()" title="লিস্ট ডিলিট">🗑️ ডিলিট</button>
+        </div>
+    </div>
     
     <form id="itemForm" onsubmit="addItem(event)">
         <div class="input-group">
@@ -98,7 +118,7 @@
                 <input type="number" id="rate" placeholder="উদা: ৫০ (ঐচ্ছিক)" min="0" step="any">
             </div>
             <div class="input-group">
-                <label>ছাড় (টাকা)</label>
+                <label>ছাড় (টাকা)</label>
                 <input type="number" id="discount" placeholder="উদা: ১০ (ঐচ্ছিক)" min="0" step="any">
             </div>
         </div>
@@ -114,16 +134,14 @@
 
     <div id="receipt-area">
         <div class="list-header">
-            <span>শপিং লিস্ট</span>
-            <!-- Custom Date display logic -->
+            <span class="list-title-display" id="currentListTitle">লিস্ট</span>
             <div class="date-picker-wrapper">
-                তারিখ: <span id="displayDate" class="date-display"></span>
+                <span id="displayDate" class="date-display"></span>
                 <input type="date" id="shoppingDate" onchange="updateDateDisplay()">
             </div>
         </div>
         <div id="itemList">
-            <!-- Cards will be generated here by JavaScript -->
-        </div>
+            </div>
 
         <div class="summary-box">
             <div class="summary-row">
@@ -151,49 +169,119 @@
 </div>
 
 <script>
-    let items = [];
+    // Data Structure: lists = [ { name: "লিস্টের নাম", date: "YYYY-MM-DD", items: [] } ]
+    let lists = [{ name: "প্রধান লিস্ট", date: "", items: [] }];
+    let currentListIndex = 0;
     const daysBangla = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
 
     window.onload = function() {
-        const storedItems = localStorage.getItem('smartShoppingList');
-        if (storedItems) {
-            items = JSON.parse(storedItems);
-        }
-
-        const storedDate = localStorage.getItem('shoppingDate');
-        if (storedDate) {
-            document.getElementById('shoppingDate').value = storedDate;
-        } else {
-            // Set today's date safely adjusting to local timezone
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            document.getElementById('shoppingDate').value = `${yyyy}-${mm}-${dd}`;
+        const storedLists = localStorage.getItem('smartShoppingListsAll');
+        if (storedLists) {
+            lists = JSON.parse(storedLists);
         }
         
-        updateDateDisplay(); // Show formatted date
-        renderList();
+        currentListIndex = parseInt(localStorage.getItem('currentListIndex')) || 0;
+        if (currentListIndex >= lists.length) currentListIndex = 0;
+
+        // If date is empty for the current list, set today's date
+        if (!lists[currentListIndex].date) {
+            setTodayDateForCurrentList();
+        }
+
+        populateListSelector();
+        updateUI();
     };
+
+    function setTodayDateForCurrentList() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        lists[currentListIndex].date = `${yyyy}-${mm}-${dd}`;
+    }
+
+    function saveAllData() {
+        localStorage.setItem('smartShoppingListsAll', JSON.stringify(lists));
+        localStorage.setItem('currentListIndex', currentListIndex);
+    }
+
+    function populateListSelector() {
+        const selector = document.getElementById('listSelector');
+        selector.innerHTML = '';
+        lists.forEach((list, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.text = list.name;
+            if (index === currentListIndex) option.selected = true;
+            selector.appendChild(option);
+        });
+    }
+
+    function createNewList() {
+        const listName = prompt("নতুন শপিং লিস্টের একটি নাম দিন (যেমন: মুদির বাজার, বইয়ের দোকান):");
+        if (!listName || listName.trim() === "") return;
+
+        lists.push({
+            name: listName.trim(),
+            date: "",
+            items: []
+        });
+        
+        currentListIndex = lists.length - 1;
+        setTodayDateForCurrentList();
+        saveAllData();
+        populateListSelector();
+        updateUI();
+    }
+
+    function deleteCurrentList() {
+        if (lists.length <= 1) {
+            alert("আপনার কাছে শুধুমাত্র একটি লিস্ট আছে, এটি ডিলিট করা যাবে না। আপনি চাইলে ভেতরের আইটেমগুলো ডিলিট করতে পারেন।");
+            return;
+        }
+
+        if (confirm(`আপনি কি নিশ্চিতভাবেই "${lists[currentListIndex].name}" লিস্টটি সম্পূর্ণ ডিলিট করতে চান?`)) {
+            lists.splice(currentListIndex, 1);
+            currentListIndex = 0; // fallback to first list
+            saveAllData();
+            populateListSelector();
+            updateUI();
+        }
+    }
+
+    function switchList(index) {
+        currentListIndex = parseInt(index);
+        if (!lists[currentListIndex].date) {
+            setTodayDateForCurrentList();
+        }
+        localStorage.setItem('currentListIndex', currentListIndex);
+        updateUI();
+    }
 
     function updateDateDisplay() {
         const dateInput = document.getElementById('shoppingDate').value;
         if (!dateInput) return;
         
-        localStorage.setItem('shoppingDate', dateInput);
+        lists[currentListIndex].date = dateInput;
+        saveAllData();
         
-        // Convert to DD-MM-YYYY format and add Bangla Day
         const dateObj = new Date(dateInput);
         const dayName = daysBangla[dateObj.getDay()];
-        
-        const parts = dateInput.split('-'); // breaks YYYY-MM-DD
-        const formattedDate = `${dayName}, ${parts[2]}-${parts[1]}-${parts[0]}`; // formats as Day, DD-MM-YYYY
+        const parts = dateInput.split('-'); 
+        const formattedDate = `${dayName}, ${parts[2]}-${parts[1]}-${parts[0]}`; 
         
         document.getElementById('displayDate').innerText = formattedDate;
     }
 
-    function saveData() {
-        localStorage.setItem('smartShoppingList', JSON.stringify(items));
+    function updateUI() {
+        // Set Header Title
+        document.getElementById('currentListTitle').innerText = lists[currentListIndex].name;
+        
+        // Set Date Input Value
+        document.getElementById('shoppingDate').value = lists[currentListIndex].date;
+        
+        updateDateDisplay();
+        renderList();
     }
 
     function addItem(event) {
@@ -213,15 +301,15 @@
         const newItem = { product, amount, unit, rate, discount, remarks, cost, discountedCost, bought: false };
 
         if (editIndex > -1) {
-            newItem.bought = items[editIndex].bought; 
-            items[editIndex] = newItem;
+            newItem.bought = lists[currentListIndex].items[editIndex].bought; 
+            lists[currentListIndex].items[editIndex] = newItem;
             document.getElementById('editIndex').value = "-1";
             document.getElementById('addBtn').innerText = "লিস্টে যোগ করুন";
         } else {
-            items.push(newItem);
+            lists[currentListIndex].items.push(newItem);
         }
         
-        saveData(); 
+        saveAllData(); 
 
         document.getElementById('itemForm').reset();
         document.getElementById('unit').value = "কেজি"; 
@@ -231,13 +319,13 @@
     }
 
     function toggleBought(index) {
-        items[index].bought = !items[index].bought;
-        saveData(); 
+        lists[currentListIndex].items[index].bought = !lists[currentListIndex].items[index].bought;
+        saveAllData(); 
         renderList();
     }
 
     function editItem(index) {
-        const item = items[index];
+        const item = lists[currentListIndex].items[index];
         document.getElementById('product').value = item.product;
         document.getElementById('amount').value = item.amount;
         document.getElementById('unit').value = item.unit;
@@ -252,8 +340,8 @@
 
     function removeItem(index) {
         if(confirm('আইটেমটি ডিলিট করতে চান?')){
-            items.splice(index, 1);
-            saveData(); 
+            lists[currentListIndex].items.splice(index, 1);
+            saveAllData(); 
             renderList();
         }
     }
@@ -264,8 +352,9 @@
         
         let estTotal = 0;
         let boughtTotal = 0;
+        const currentItems = lists[currentListIndex].items || [];
 
-        items.forEach((item, index) => {
+        currentItems.forEach((item, index) => {
             estTotal += item.discountedCost;
             if(item.bought) boughtTotal += item.discountedCost;
 
@@ -303,7 +392,7 @@
     }
 
     async function shareAsImage() {
-        if(items.length === 0) {
+        if(lists[currentListIndex].items.length === 0) {
             alert("লিস্টে কোনো আইটেম নেই!");
             return;
         }
@@ -322,14 +411,14 @@
                 
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
-                        title: 'বাজারের লিস্ট',
-                        text: 'আমার বাজারের হিসাব নিচে দেওয়া হলো:',
+                        title: `${lists[currentListIndex].name}`,
+                        text: `আমার "${lists[currentListIndex].name}" এর হিসাব নিচে দেওয়া হলো:`,
                         files: [file]
                     });
                 } else {
-                    alert("ছবি ডাউনলোড করা হচ্ছে। আপনি নিজে এটি শেয়ার করতে পারবেন।");
+                    alert("ছবি ডাউনলোড করা হচ্ছে।");
                     const link = document.createElement('a');
-                    link.download = `Shopping_List_${document.getElementById('shoppingDate').value}.png`;
+                    link.download = `${lists[currentListIndex].name}_${lists[currentListIndex].date}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                 }
