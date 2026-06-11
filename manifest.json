@@ -1,8 +1,8 @@
 {
   "name": "স্মার্ট বাজারের হিসাব",
   "short_name": "হিসাব",
-  "start_url": "index.html",
-  "scope": "/",
+  "start_url": "/shopping-app/",
+  "scope": "/shopping-app/",
   "display": "standalone",
   "background_color": "#f0f2f5",
   "theme_color": "#1a73e8",
