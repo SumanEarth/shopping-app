@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1a73e8">
+    <meta name="description" content="স্মার্ট বাজারের হিসাব - শপিং লিস্ট এবং বাজেট পরিকল্পনা">
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081840.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3081/3081840.png">
     <title>স্মার্ট বাজারের হিসাব</title>
@@ -31,7 +33,8 @@
         input, select { width: 100%; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 15px; background: #f8f9fa; }
         input:focus, select:focus { border-color: #1a73e8; outline: none; background: #fff; }
         
-        button.add-btn { width: 100%; padding: 14px; background: #1a73e8; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.2s; }
+        button.add-btn { width: 100%; padding: 14px; background: #1a73e8; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.3s; }
+        button.add-btn:hover { background: #1557b0; }
         button.add-btn:active { background: #1557b0; }
 
         #receipt-area { margin-top: 25px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #eee; }
@@ -66,7 +69,8 @@
 
         .dev-footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; font-weight: bold; }
 
-        button.share-btn { width: 100%; padding: 12px; background: #25d366; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        button.share-btn { width: 100%; padding: 12px; background: #25d366; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; display: block; }
+        button.share-btn:hover { background: #20c55e; }
     </style>
 </head>
 <body>
@@ -86,7 +90,7 @@
     <form id="itemForm" onsubmit="addItem(event)">
         <div class="input-group">
             <label>পণ্যের নাম</label>
-            <input type="text" id="product" list="product-suggestions" placeholder="যেমন: আলু, পেঁয়াজ" required>
+            <input type="text" id="product" list="product-suggestions" placeholder="যেমন: আলু, পেঁয়াজ" required>
             <datalist id="product-suggestions">
                 <option value="আলু"><option value="পেঁয়াজ"><option value="রসুন"><option value="আদা">
                 <option value="কাঁচা মরিচ"><option value="চাল"><option value="ডাল"><option value="সয়াবিন তেল">
@@ -121,7 +125,7 @@
                 <input type="number" id="rate" placeholder="উদা: ৫০ (ঐচ্ছিক)" min="0" step="any">
             </div>
             <div class="input-group">
-                <label>ছাড় (টাকা)</label>
+                <label>ছাড় (টাকা)</label>
                 <input type="number" id="discount" placeholder="উদা: ১০ (ঐচ্ছিক)" min="0" step="any">
             </div>
         </div>
@@ -152,11 +156,11 @@
                 <span id="estTotal">৳0.00</span>
             </div>
             <div class="summary-row">
-                <span>কেনা হয়েছে (টিক দেওয়া):</span>
+                <span>কেনা হয়েছে (টিক দেওয়া):</span>
                 <span id="boughtTotal" style="color:#137333; font-weight:bold;">৳0.00</span>
             </div>
             <div class="summary-row summary-total">
-                <span>সর্বমোট (ছাড় বাদে):</span>
+                <span>সর্বমোট (ছাড় বাদে):</span>
                 <span id="grandTotal">৳0.00</span>
             </div>
         </div>
@@ -167,11 +171,20 @@
     </div>
 
     <button class="share-btn" onclick="shareAsImage()">
-        📸 হোয়াটসঅ্যাপ/টেলিগ্রামে শেয়ার করুন
+        📸 হোয়াটসঅ্যাপ/টেলিগ্রামে শেয়ার করুন
     </button>
 </div>
 
 <script>
+    // Register Service Worker for PWA functionality
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js').catch(err => {
+                console.log('Service Worker registration failed:', err);
+            });
+        });
+    }
+
     // Data Structure: lists = [ { name: "লিস্টের নাম", date: "YYYY-MM-DD", items: [] } ]
     let lists = [{ name: "প্রধান লিস্ট", date: "", items: [] }];
     let currentListIndex = 0;
@@ -221,7 +234,7 @@
     }
 
     function createNewList() {
-        const listName = prompt("নতুন শপিং লিস্টের একটি নাম দিন (যেমন: মুদির বাজার, বইয়ের দোকান):");
+        const listName = prompt("নতুন শপিং লিস্টের একটি নাম দিন (যেমন: মুদির বাজার, বইয়ের দোকান):");
         if (!listName || listName.trim() === "") return;
 
         lists.push({
@@ -239,7 +252,7 @@
 
     function deleteCurrentList() {
         if (lists.length <= 1) {
-            alert("আপনার কাছে শুধুমাত্র একটি লিস্ট আছে, এটি ডিলিট করা যাবে না। আপনি চাইলে ভেতরের আইটেমগুলো ডিলিট করতে পারেন।");
+            alert("আপনার কাছে শুধুমাত্র একটি লিস্ট আছে, এটি ডিলিট করা যাবে না। আপনি চাইলে সব আইটেম সাফ করে দিতে পারেন।");
             return;
         }
 
@@ -381,7 +394,7 @@
                     </div>
                 </div>
                 <div class="card-details">
-                    <span>দর: ${rateText} ${item.discount > 0 ? ` | ছাড়: ৳${item.discount}` : ''}</span>
+                    <span>দর: ${rateText} ${item.discount > 0 ? ` | ছাড়: ৳${item.discount}` : ''}</span>
                     <span class="cost-highlight">মোট: ${totalText}</span>
                 </div>
                 ${remarksHtml}
@@ -415,7 +428,7 @@
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
                         title: `${lists[currentListIndex].name}`,
-                        text: `আমার "${lists[currentListIndex].name}" এর হিসাব নিচে দেওয়া হলো:`,
+                        text: `আমার "${lists[currentListIndex].name}" এর হিসাব নিচে দেওয়া হলো:`,
                         files: [file]
                     });
                 } else {
@@ -428,7 +441,7 @@
             });
         } catch (error) {
             console.error("Image generation failed", error);
-            alert("ছবি তৈরি করতে সমস্যা হয়েছে।");
+            alert("ছবি তৈরি করতে সমস্যা হয়েছে।");
             actionButtons.forEach(btn => btn.style.display = 'flex');
         }
     }
